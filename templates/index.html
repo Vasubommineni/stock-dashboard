@@ -18,6 +18,13 @@
         style="padding: 8px 16px; background: #3498db; color: white; border: none;">
         Show Data
     </button>
+
+    <select id="company2">
+    <option value="TCS">TCS</option>
+    <option value="INFY">INFY</option>
+</select>
+
+<button onclick="compareStocks()">Compare</button>
 </div>
 
 <canvas id="chart" style="max-width: 900px; margin: auto;"></canvas>
@@ -54,6 +61,51 @@ async function loadData() {
                 data: data.map(d => parseFloat(d.MA7)),
                 borderDash: [5,5]
             }]
+        }
+    });
+}
+
+
+async function compareStocks() {
+    let s1 = document.getElementById("company").value;
+    let s2 = document.getElementById("company2").value;
+
+    if (s1 === s2) {
+    alert("Please select two different stocks");
+    return;
+    }
+
+    let res = await fetch(`/compare?symbol1=${s1}&symbol2=${s2}`);
+    let data = await res.json();
+
+    let d1 = data.stock1;
+    let d2 = data.stock2;
+
+    let labels = d1.map(d => new Date(d.Date).toLocaleDateString());
+
+    let prices1 = d1.map(d => parseFloat(d.Close));
+    let prices2 = d2.map(d => parseFloat(d.Close));
+
+    if (chart) chart.destroy();
+
+    let ctx = document.getElementById("chart").getContext("2d");
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: s1,
+                    data: prices1,
+                    borderWidth: 2
+                },
+                {
+                    label: s2,
+                    data: prices2,
+                    borderWidth: 2
+                }
+            ]
         }
     });
 }

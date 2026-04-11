@@ -34,7 +34,7 @@ def get_data(symbol):
 
     data = data.reset_index()
 
-    return data.to_json(orient="records")
+    return data.to_dict(orient="records")
 
 @app.route("/summary/<symbol>")
 def get_summary(symbol):
@@ -52,6 +52,32 @@ def get_summary(symbol):
     }
 
     return jsonify(summary)
+
+@app.route("/compare")
+def compare():
+    symbol1 = request.args.get("symbol1")
+    symbol2 = request.args.get("symbol2")
+
+    ticker1 = companies.get(symbol1.upper())
+    ticker2 = companies.get(symbol2.upper())
+
+    if not ticker1 or not ticker2:
+        return {"error": "Invalid symbols"}
+
+    data1 = yf.download(ticker1, period="30d")
+    data2 = yf.download(ticker2, period="30d")
+
+    # FIX columns
+    data1.columns = data1.columns.get_level_values(0)
+    data2.columns = data2.columns.get_level_values(0)
+
+    data1 = data1.reset_index()
+    data2 = data2.reset_index()
+
+    return {
+        "stock1": data1.to_dict(orient="records"),
+        "stock2": data2.to_dict(orient="records")
+    }
 
 if __name__ == "__main__":
     app.run(debug=True)
