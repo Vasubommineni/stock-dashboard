@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="font-family: Arial; text-align: center; background: #f5f7fa;">
+
+<h1 style="color: #2c3e50;">📊 Stock Dashboard</h1>
+
+<div style="margin: 20px;">
+    <select id="company" style="padding: 8px;">
+        <option value="INFY">INFY</option>
+        <option value="TCS">TCS</option>
+    </select>
+
+    <button onclick="loadData()" 
+        style="padding: 8px 16px; background: #3498db; color: white; border: none;">
+        Show Data
+    </button>
+</div>
+
+<canvas id="chart" style="max-width: 900px; margin: auto;"></canvas>
+<script>
+let chart;
+
+async function loadData() {
+    let symbol = document.getElementById("company").value;
+
+    let res = await fetch(`/data/${symbol}`);
+    let data = await res.json();
+
+    console.log(data); // debug
+
+    // ✅ FIX DATE + PRICE PROPERLY
+    let labels = data.map(d => new Date(d.Date).toLocaleDateString());  // remove time
+    let prices = data.map(d => Number(d.Close));      // convert to number
+
+    if (chart) chart.destroy();
+
+    let ctx = document.getElementById("chart").getContext("2d");
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: symbol + " Price",
+                data: prices,
+                borderWidth: 2
+            },
+            {
+                label: "Moving Average",
+                data: data.map(d => parseFloat(d.MA7)),
+                borderDash: [5,5]
+            }]
+        }
+    });
+}
+</script>
+
+</body>
+</html>
