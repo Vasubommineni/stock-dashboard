@@ -32,9 +32,13 @@ def get_data(symbol):
     data['Daily Return'] = (data['Close'] - data['Open']) / data['Open']
     data['MA7'] = data['Close'].rolling(7).mean()
 
+    data['Prediction'] = data['Close'].rolling(3).mean()
+
     data = data.reset_index()
 
-    return data.to_dict(orient="records")
+    data = data.bfill().ffill()
+
+    return jsonify(data.to_dict(orient="records"))
 
 @app.route("/summary/<symbol>")
 def get_summary(symbol):

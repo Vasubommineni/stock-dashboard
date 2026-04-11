@@ -4,27 +4,39 @@
     <title>Stock Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body style="font-family: Arial; text-align: center; background: #f5f7fa;">
+<body style="font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center;">
 
-<h1 style="color: #2c3e50;">📊 Stock Dashboard</h1>
+<h1 style="margin-top: 20px;">📊 Stock Dashboard</h1>
 
-<div style="margin: 20px;">
-    <select id="company" style="padding: 8px;">
+<div style="
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    width: 80%;
+    margin: 20px auto;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+">
+
+    <select id="company" style="padding: 10px; border-radius: 6px;">
         <option value="INFY">INFY</option>
         <option value="TCS">TCS</option>
     </select>
 
     <button onclick="loadData()" 
-        style="padding: 8px 16px; background: #3498db; color: white; border: none;">
+        style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px;">
         Show Data
     </button>
 
-    <select id="company2">
-    <option value="TCS">TCS</option>
-    <option value="INFY">INFY</option>
-</select>
+    <select id="company2" style="padding: 10px; border-radius: 6px;">
+        <option value="TCS">TCS</option>
+        <option value="INFY">INFY</option>
+    </select>
 
-<button onclick="compareStocks()">Compare</button>
+    <button onclick="compareStocks()" 
+        style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px;">
+        Compare
+    </button>
+
 </div>
 
 <canvas id="chart" style="max-width: 900px; margin: auto;"></canvas>
@@ -58,9 +70,22 @@ async function loadData() {
             },
             {
                 label: "Moving Average",
-                data: data.map(d => parseFloat(d.MA7)),
+                data: data.map(d => {
+                    let val = parseFloat(d.MA7);
+                    return isNaN(val) ? null : val;
+                }),
                 borderDash: [5,5]
-            }]
+            },
+            {
+                label: "Prediction",
+                data: data.map(d => {
+                let val = parseFloat(d.Prediction);
+                return isNaN(val) ? null : val;
+                }),
+                borderColor: "yellow",
+                borderWidth: 2
+            }
+            ]
         }
     });
 }
