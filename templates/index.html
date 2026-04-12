@@ -4,52 +4,130 @@
     <title>Stock Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body style="font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center;">
-
-<h1 style="margin-top: 20px;">📊 Stock Dashboard</h1>
-
-<div style="
-    background: #1e293b;
-    padding: 20px;
-    border-radius: 12px;
-    width: 80%;
-    margin: 20px auto;
-    box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+<body style="
+font-family: 'Segoe UI', sans-serif;
+background: linear-gradient(135deg, #0f172a, #1e293b);
+color: white;
+text-align: center;
+margin: 0;
+padding: 0;
 ">
 
-    <select id="company" style="padding: 10px; border-radius: 6px;">
-        <option value="INFY">INFY</option>
-        <option value="TCS">TCS</option>
-    </select>
+<h1 style="
+font-size: 40px;
+margin-top: 30px;
+font-weight: bold;
+letter-spacing: 1px;
+">
+📊 Stock Dashboard
+</h1>
 
-    <button onclick="loadData()" 
-        style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px;">
-        Show Data
-    </button>
 
-    <select id="company2" style="padding: 10px; border-radius: 6px;">
-        <option value="TCS">TCS</option>
-        <option value="INFY">INFY</option>
-    </select>
+<div style="
+backdrop-filter: blur(12px);
+background: rgba(255,255,255,0.05);
+padding: 20px;
+border-radius: 16px;
+width: 85%;
+margin: 30px auto;
+box-shadow: 0px 8px 30px rgba(0,0,0,0.5);
+display: flex;
+flex-wrap: wrap;
+justify-content: center;
+gap: 10px;
+">
 
-    <button onclick="compareStocks()" 
-        style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px;">
-        Compare
-    </button>
+<input id="customStock" placeholder="🔍 Enter Stock (e.g. HDFCBANK)" 
+style="padding:10px; border-radius:8px; border:none; outline:none;">
+
+<select id="company" style="padding:10px; border-radius:8px;">
+    <option value="INFY">INFY</option>
+    <option value="TCS">TCS</option>
+</select>
+
+<button onclick="loadData()" 
+style="padding:10px 20px; background: #3b82f6; color:white; border:none; border-radius:8px; cursor:pointer;">
+Show Data
+</button>
+
+<select id="company2" style="padding:10px; border-radius:8px;">
+    <option value="TCS">TCS</option>
+    <option value="INFY">INFY</option>
+</select>
+
+<select id="range" style="padding:10px; border-radius:8px;">
+    <option value="7d">7 Days</option>
+    <option value="30d" selected>30 Days</option>
+    <option value="90d">3 Months</option>
+</select>
+
+<button onclick="compareStocks()" 
+style="padding:10px 20px; background: #10b981; color:white; border:none; border-radius:8px; cursor:pointer;">
+Compare
+</button>
 
 </div>
 
-<canvas id="chart" style="max-width: 900px; margin: auto;"></canvas>
+
+
+<div id="chartContainer" style="
+position: relative;
+height: 500px;
+width: 90%;
+margin: auto;
+background: rgba(255,255,255,0.05);
+border-radius: 16px;
+padding: 20px;
+box-shadow: 0px 8px 30px rgba(0,0,0,0.5);
+">
+
+    <canvas id="chart"></canvas>
+
+    <p id="placeholder" style="
+        position:absolute;
+        top:50%;
+        left:50%;
+        transform:translate(-50%, -50%);
+        color:#94a3b8;
+        font-size:18px;
+    ">
+        📊 Select a stock and click "Show Data"
+    </p>
+
+</div>
+
 <script>
 let chart;
 
 async function loadData() {
-    let symbol = document.getElementById("company").value;
+    let placeholder = document.getElementById("placeholder");
 
-    let res = await fetch(`/data/${symbol}`);
+    placeholder.style.display = "block";
+    placeholder.innerText = "⏳ Loading...";
+
+    let input = document.getElementById("customStock").value;
+    let symbol = input ? input : document.getElementById("company").value;
+
+    let range = document.getElementById("range").value;
+
+    let res;
+
+    try {
+        res = await fetch(`/data/${symbol}?range=${range}`);
+    } catch (err) {
+        document.getElementById("chartContainer").innerHTML = "❌ Network Error";
+        return;
+    }
+
     let data = await res.json();
+    placeholder.style.display = "none";
 
-    console.log(data); // debug
+    if (data.error) {
+    placeholder.innerText = "❌ " + data.error;
+    return;
+    }
+
+    console.log("data received:", data); // debug
 
     // ✅ FIX DATE + PRICE PROPERLY
     let labels = data.map(d => new Date(d.Date).toLocaleDateString());  // remove time
@@ -59,6 +137,8 @@ async function loadData() {
 
     let ctx = document.getElementById("chart").getContext("2d");
 
+    document.getElementById("customStock").value = "";
+
     chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -66,7 +146,17 @@ async function loadData() {
             datasets: [{
                 label: symbol + " Price",
                 data: prices,
-                borderWidth: 2
+                borderColor: "#3b82f6",
+                borderWidth: 3,
+                tension: 0.4
+            },
+            {
+                label: "Volume",
+                data: data.map(d => parseFloat(d.Volume)),
+                borderColor: "rgba(255,165,0,0.4)",
+                borderWidth: 1,
+                yAxisID: 'y1',
+                tension: 0.4
             },
             {
                 label: "Moving Average",
@@ -74,7 +164,9 @@ async function loadData() {
                     let val = parseFloat(d.MA7);
                     return isNaN(val) ? null : val;
                 }),
-                borderDash: [5,5]
+                borderColor: "#94a3b8",
+                borderDash: [5,5],
+                tension: 0.4
             },
             {
                 label: "Prediction",
@@ -82,11 +174,50 @@ async function loadData() {
                 let val = parseFloat(d.Prediction);
                 return isNaN(val) ? null : val;
                 }),
-                borderColor: "yellow",
-                borderWidth: 2
+                borderColor: "#22c55e",
+                borderWidth: 3,
+                tension: 0.4
             }
             ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            },
+        plugins: {
+            legend: {
+                labels: {
+                    color: "white"
+                }
+            },
+            tooltip: {
+                backgroundColor: "#1e293b",
+                titleColor: "#fff",
+                bodyColor: "#fff"
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: "white" },
+                grid: { color: "rgba(255,255,255,0.05)" }
+            },
+            y: {
+                ticks: { color: "white" },
+                grid: { color: "rgba(255,255,255,0.05)" }
+            },
+            y1: {
+                position: 'right',
+                ticks: { color: "white" },
+                grid: {
+                    drawOnChartArea: false
+                }
+            }
         }
+}
+        
     });
 }
 
@@ -101,6 +232,7 @@ async function compareStocks() {
     }
 
     let res = await fetch(`/compare?symbol1=${s1}&symbol2=${s2}`);
+    document.getElementById("placeholder").style.display = "none";
     let data = await res.json();
 
     let d1 = data.stock1;
@@ -123,13 +255,13 @@ async function compareStocks() {
                 {
                     label: s1,
                     data: prices1,
-                    borderWidth: 2
+                    borderWidth: 2,
                 },
                 {
                     label: s2,
                     data: prices2,
-                    borderWidth: 2
-                }
+                    borderWidth: 2,
+                }  
             ]
         }
     });

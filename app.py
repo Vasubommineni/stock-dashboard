@@ -20,13 +20,32 @@ def get_companies():
 
 @app.route("/data/<symbol>")
 def get_data(symbol):
-    ticker = companies.get(symbol.upper())
+    symbol = symbol.upper()
+
+    # If user enters plain name, add .NS
+    if "." not in symbol:
+        symbol = symbol + ".NS"
+
+    ticker = companies.get(symbol.replace(".NS", ""), symbol)
 
     if not ticker:
         return jsonify({"error": "Invalid symbol"})
+    
+    range_param = request.args.get("range", "30")
 
-    data = yf.download(ticker, period="30d")
+    range_map = {
+        "7": "7d",
+        "30": "30d",
+        "90": "3mo"
+    }
 
+    period = range_map.get(range_param, "30d")
+
+    data = yf.download(ticker, period=period)
+
+    if data.empty:
+        return jsonify({"error": "No data found for this symbol"})
+    
     data.columns = data.columns.get_level_values(0)
 
     data['Daily Return'] = (data['Close'] - data['Open']) / data['Open']
