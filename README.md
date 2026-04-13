@@ -26,4 +26,4 @@ python app.py
 https://stock-dashboard-64fz.onrender.com
 
 ## 💡 Future Improvements
-- Deploy online
+- 
